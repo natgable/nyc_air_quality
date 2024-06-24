@@ -64,24 +64,27 @@ def load_and_merge_geo_data() -> gpd.GeoDataFrame:
 
 
 class ACSDataHandler:
-    def __init__(self, acs_vars: List[str], years: List[int]):
+    def __init__(self, acs_vars: List[str], years: List[int], uhf_codes: List[int] = []):
         """
         Instatiate ACSDataHandler to load and clean data from the American Community Survey.
 
         Args:
             acs_vars (List[str]): the ACS-specific variable codes
             years (List[int]): years to include in our query
+            uhf_codes (List[int]): subset of UHF codes to query (gets translated to ZCTAs)
         """
         self.acs_vars = acs_vars
         self.acs_vars_names = [const.ACS_VARS[var_code] for var_code in self.acs_vars]
         self.years = years
-        self.zcta_df = self._load_nyc_zcta()
+        self.zcta_df = self._load_nyc_zcta(uhf_codes)
         self.zcta_list = ",".join([str(x) for x in list(self.zcta_df["zcta"].unique())])
 
     @staticmethod
-    def _load_nyc_zcta() -> pd.DataFrame:
+    def _load_nyc_zcta(uhf_codes) -> pd.DataFrame:
         zcta_df = pd.read_csv(const.ZCTA_TO_UHF_URL)
         zcta_df = zcta_df[zcta_df["uhfcode"] < 1000]
+        if uhf_codes:
+            zcta_df = zcta_df[zcta_df["uhfcode"].isin(uhf_codes)]
         return zcta_df
 
     def load_acs5_data(self) -> pd.DataFrame:
